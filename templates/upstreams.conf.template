@@ -11,5 +11,5 @@ upstream storage_urls {
 }
 
 upstream fastcgi_backend {
-    server  127.0.0.1:9000;
+    server  unix:/run/php-fpm/www.sock;
 }

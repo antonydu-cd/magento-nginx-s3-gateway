@@ -24,6 +24,7 @@ js_set $s3SecurityToken s3gateway.s3SecurityToken;
 js_set $s3uri s3gateway.s3uri;
 
 server {
+    listen 8080;
     include /etc/nginx/conf.d/gateway/server_variables.conf;
 
     # Don't display the NGINX version number because we don't want to reveal

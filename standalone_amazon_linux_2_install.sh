@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+sudo yum remove -y nginx
+sudo yum install -y https://nginx.org/packages/mainline/centos/7/x86_64/RPMS/nginx-1.21.6-1.el7.ngx.x86_64.rpm
+sudo yum install -y https://nginx.org/packages/mainline/centos/7/x86_64/RPMS/nginx-module-image-filter-1.21.6-1.el7.ngx.x86_64.rpm
+sudo yum install -y https://nginx.org/packages/mainline/centos/7/x86_64/RPMS/nginx-module-njs-1.21.6%2B0.7.4-1.el7.ngx.x86_64.rpm
+sudo yum install -y https://nginx.org/packages/mainline/centos/7/x86_64/RPMS/nginx-module-xslt-1.21.6-1.el7.ngx.x86_64.rpm
 
 export S3_BUCKET_NAME='your_bucket'
 export S3_ACCESS_KEY_ID='your_access_key'
@@ -118,7 +123,6 @@ chmod og-rwx /etc/nginx/environment
 
 cat > /usr/local/bin/template_nginx_config.sh << 'EOF'
 #!/usr/bin/env bash
-
 ME=$(basename $0)
 auto_envsubst() {
   local template_dir="${NGINX_ENVSUBST_TEMPLATE_DIR:-/etc/nginx/templates}"
@@ -176,7 +180,7 @@ if [ ! -f /etc/nginx/conf.d/default.conf.orig ]; then
 fi
 
 cat > /etc/nginx/nginx.conf << 'EOF'
-user  nginx;
+user  centos;
 worker_processes  auto;
 error_log  /var/log/nginx/error.log;
 pid        /var/run/nginx.pid;
@@ -189,10 +193,8 @@ load_module modules/ngx_stream_js_module.so;
 load_module modules/ngx_http_image_filter_module.so;
 # XML module
 load_module modules/ngx_http_xslt_filter_module.so;
-
 # Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
 include /usr/share/nginx/modules/*.conf;
-
 # Preserve S3 environment variables for worker threads
 EOF
 
@@ -245,27 +247,30 @@ http {
     inactive=60m
     use_temp_path=off;
     
+    server {
+        listen 80;
+        set $MAGE_ROOT /var/www/html;
+        include /var/www/html/nginx.conf;
+    }
+
     # Load modular configuration files from the /etc/nginx/conf.d directory.
     # See http://nginx.org/en/docs/ngx_core_module.html#include
     # for more information.
     include /etc/nginx/conf.d/*.conf;
- 
 }
 EOF
 
 download "include/listing.xsl" "/etc/nginx/include/listing.xsl"
 download "include/s3gateway.js" "/etc/nginx/include/s3gateway.js"
 download "templates/default.conf.template" "/etc/nginx/templates/default.conf.template"
-download "templates/gateway/v2_headers.conf.template" "/etc/nginx/templates/gateway/v2_headers.conf.template"
-download "templates/gateway/v2_js_vars.conf.template" "/etc/nginx/templates/gateway/v2_js_vars.conf.template"
 download "templates/gateway/v4_headers.conf.template" "/etc/nginx/templates/gateway/v4_headers.conf.template"
 download "templates/gateway/v4_js_vars.conf.template" "/etc/nginx/templates/gateway/v4_js_vars.conf.template"
 download "templates/upstreams.conf.template" "/etc/nginx/templates/upstreams.conf.template"
 download "gateway/server_variables.conf" "/etc/nginx/conf.d/gateway/server_variables.conf"
 
 #We overwrite the default.conf.template file to add listen to a defined port
-echo "▶ Overwriting S3 port to 8080"
-printf "%s\n" "/server {/a" "    listen 8080;" . w | ed -s /etc/nginx/templates/default.conf.template
+# echo "▶ Overwriting S3 port to 8080"
+# printf "%s\n" "/server {/a" "    listen 8080;" . w | ed -s /etc/nginx/templates/default.conf.template
 
 echo "▶ Creating directory for proxy cache"
 mkdir -p /var/cache/nginx/s3_proxy
@@ -276,4 +281,3 @@ sudo systemctl stop nginx
 
 echo "▶ Starting NGINX"
 sudo systemctl start nginx
-
