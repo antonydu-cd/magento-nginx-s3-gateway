@@ -234,6 +234,7 @@ http {
     tcp_nodelay    on;
     keepalive_timeout  65;
     types_hash_max_size 4096;
+    client_max_body_size 8M;
     #gzip  on;
 
     include       /etc/nginx/mime.types;
@@ -246,6 +247,7 @@ http {
     max_size=10g
     inactive=60m
     use_temp_path=off;
+    server_tokens off;
     
     server {
         listen 80;
@@ -274,7 +276,7 @@ download "gateway/server_variables.conf" "/etc/nginx/conf.d/gateway/server_varia
 
 echo "▶ Creating directory for proxy cache"
 mkdir -p /var/cache/nginx/s3_proxy
-chown nginx:nginx /var/cache/nginx/s3_proxy
+chown centos:centos /var/cache/nginx/s3_proxy
 
 echo "▶ Stopping NGINX"
 sudo systemctl stop nginx
