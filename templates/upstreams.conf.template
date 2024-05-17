@@ -11,5 +11,5 @@ upstream storage_urls {
 }
 
 upstream fastcgi_backend {
-    server  unix:/run/php-fpm/www.sock;
+    server  unix:/run/php/php8.1-fpm.sock;
 }
